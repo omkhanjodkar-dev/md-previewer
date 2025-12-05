@@ -1,7 +1,20 @@
-const { app, BrowserWindow, protocol, ipcMain } = require('electron');
-const path = require('path');
-const url = require('url');
-const fs = require('fs/promises'); // Use fs.promises for async operations
+import { app, BrowserWindow, protocol, ipcMain } from 'electron';
+import path from 'path';
+import url from 'url';
+import fs from 'fs/promises'; // Use fs.promises for async operations
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Helper function to extract markdown file path from arguments
+function getMarkdownFilePath(args) {
+  // In a packaged app, the first few arguments are usually electron executable path, app path, etc.
+  // We're looking for the first argument that ends with .md
+  // On Windows, when associated, the file path might be quoted.
+  const filePath = args.find(arg => arg.endsWith('.md') || arg.endsWith('.markdown'));
+  return filePath;
+}
 
 let mainWindow;
 
@@ -31,11 +44,9 @@ function createWindow() {
   // Handle file association arguments if the app is already open
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     if (mainWindow) {
-      if (commandLine.length > 1) {
-        const filePath = commandLine.pop(); // The last argument should be the file path
-        if (filePath && filePath.endsWith('.md')) {
+      const filePath = getMarkdownFilePath(commandLine);
+      if (filePath) {
           mainWindow.webContents.send('open-file-from-main', filePath);
-        }
       }
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -43,17 +54,17 @@ function createWindow() {
   });
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     // Handle file association arguments on initial launch
-    if (process.argv.length > 1) {
-      const filePath = process.argv.pop(); // The last argument should be the file path
-      if (filePath && filePath.endsWith('.md')) {
+    const filePath = getMarkdownFilePath(process.argv);
+    if (filePath) {
         // Send the file path to the renderer process to be displayed
         mainWindow.webContents.send('open-file-from-main', filePath);
-      }
     }
   });
 
@@ -110,4 +121,3 @@ app.on('activate', () => {
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true } }
 ]);
-

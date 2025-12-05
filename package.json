@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "main": "electron.js",
   "type": "module",
+  "bin": {
+    "openmd": "./bin/openmd.js"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,7 +14,7 @@
     "preview": "vite preview",
     "electron-dev": "cross-env NODE_ENV=development electron .",
     "electron-build": "vite build && electron-builder",
-    "start": "electron ."
+    "start": "electron.cmd ."
   },
   "dependencies": {
     "react": "^19.2.0",
